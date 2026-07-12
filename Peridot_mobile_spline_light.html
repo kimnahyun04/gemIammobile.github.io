@@ -1,0 +1,1341 @@
+<!doctype html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+    <meta name="theme-color" content="#f5ffe3">
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Jost:wght@200;300;400;500&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://prod.spline.design" crossorigin>
+    <link rel="preconnect" href="https://unpkg.com" crossorigin>
+    <title>Peridot · Mobile Spline</title>
+    <style>
+        :root {
+            --lime: #b8ff4f;
+            --lime2: #9dff3a;
+            --deep: rgba(9, 54, 36, .94);
+            --text: rgba(18, 55, 38, .86);
+            --line: rgba(20, 85, 50, .14);
+            --soft-white: rgba(255, 255, 255, .68);
+        }
+        * {
+            box-sizing: border-box;
+        }
+        html,
+        body {
+            margin: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: #000;
+            font-family: "Cormorant Garamond", serif;
+        }
+        button {
+            font: inherit;
+        }
+        .viewport,
+        .game-container {
+            position: fixed;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: #000;
+        }
+        .game-container {
+            position: relative;
+        }
+        .top-nav {
+            position: absolute;
+            top: max(1rem, env(safe-area-inset-top));
+            left: 1rem;
+            z-index: 80;
+            display: flex;
+            flex-direction: column;
+            gap: .55rem;
+            align-items: flex-start;
+        }
+        .menu-toggle-btn {
+            position: relative;
+            width: 2.8rem;
+            height: 2.8rem;
+            border-radius: 50%;
+            display: grid;
+            place-items: center;
+            cursor: pointer;
+            color: #fff;
+            background: rgba(5, 14, 8, .42);
+            border: 1px solid rgba(255, 255, 255, .18);
+            box-shadow: 0 0 18px rgba(157, 255, 58, .16);
+        }
+        .menu-toggle-btn::before {
+            content: "";
+            width: .82rem;
+            height: .82rem;
+            border-radius: 50%;
+            background: var(--lime);
+            box-shadow: 0 0 12px rgba(184, 255, 79, .58);
+        }
+        .menu-toggle-btn span {
+            position: absolute;
+            width: 1rem;
+            height: 1px;
+            background: rgba(245, 255, 248, .9);
+            transition: .25s;
+        }
+        .menu-toggle-btn span:first-child {
+            transform: translateY(-.3rem);
+        }
+        .menu-toggle-btn span:last-child {
+            transform: translateY(.3rem);
+        }
+        .top-nav.open .menu-toggle-btn span:first-child {
+            transform: rotate(45deg);
+        }
+        .top-nav.open .menu-toggle-btn span:nth-child(2) {
+            opacity: 0;
+        }
+        .top-nav.open .menu-toggle-btn span:last-child {
+            transform: rotate(-45deg);
+        }
+        .nav-menu {
+            min-width: 11rem;
+            padding: .8rem;
+            border-radius: 1rem;
+            display: grid;
+            gap: .45rem;
+            background: rgba(5, 15, 8, .86);
+            border: 1px solid rgba(255, 255, 255, .12);
+            opacity: 0;
+            transform: translateY(-6px) scale(.97);
+            pointer-events: none;
+            transition: .25s;
+        }
+        .top-nav.open .nav-menu {
+            opacity: 1;
+            transform: none;
+            pointer-events: auto;
+        }
+        .nav-link {
+            padding: .52rem .65rem;
+            border-radius: 999px;
+            font-family: "Jost", sans-serif;
+            font-size: .72rem;
+            letter-spacing: .14em;
+            color: rgba(220, 255, 145, .88);
+            cursor: pointer;
+        }
+        .nav-link:hover {
+            background: rgba(255, 255, 255, .07);
+            color: #fff;
+        }
+        .transition-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 99999;
+            background: #000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity .55s;
+        }
+        .transition-overlay.show {
+            opacity: 1;
+        }
+        .modal,
+        .product-zoom-modal {
+            position: fixed;
+            inset: 0;
+            opacity: 0;
+            pointer-events: none;
+            transition: .28s;
+        }
+        .modal {
+            z-index: 90;
+        }
+        .modal.show,
+        .product-zoom-modal.show {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .backdrop {
+            position: absolute;
+            inset: 0;
+            background: rgba(4, 12, 7, .88);
+        }
+        .round-close {
+            border: 1px solid rgba(255, 255, 255, .15);
+            background: rgba(8, 20, 12, .72);
+            color: #fff;
+            border-radius: 50%;
+            cursor: pointer;
+            display: grid;
+            place-items: center;
+            line-height: 1;
+            padding: 0;
+            font-family: "Jost", sans-serif;
+            font-size: 1.35rem;
+            font-weight: 400;
+        }
+        .tarot-panel {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            z-index: 1;
+            width: min(90vw, 46rem);
+            transform: translate(-50%, -50%) scale(.96);
+            padding: 2rem;
+            border-radius: 1.2rem;
+            background: rgba(12, 30, 7, .96);
+            border: 1px solid rgba(184, 255, 79, .18);
+            text-align: center;
+            transition: .28s;
+        }
+        .modal.show .tarot-panel {
+            transform: translate(-50%, -50%) scale(1);
+        }
+        .menu-tarot-close {
+            position: absolute;
+            right: .8rem;
+            top: .8rem;
+            width: 2.2rem;
+            height: 2.2rem;
+        }
+        .menu-tarot-kicker,
+        .product-kicker,
+        .product-mini-label,
+        .product-caption-kicker {
+            font-family: "Jost", sans-serif;
+            font-size: .58rem;
+            letter-spacing: .28em;
+            font-weight: 300;
+            color: rgba(30, 92, 58, .6);
+        }
+        .menu-tarot-kicker {
+            color: rgba(184, 255, 79, .64);
+        }
+        .menu-tarot-title,
+        .menu-tarot-result strong,
+        .product-title-block h2,
+        .product-desc-title {
+            font-family: "Cormorant Garamond", serif;
+        }
+        .menu-tarot-title {
+            margin: .5rem 0 0;
+            font-size: 2rem;
+            font-weight: 300;
+            color: #f5ffe1;
+        }
+        .menu-tarot-desc {
+            margin: .7rem 0 1.4rem;
+            color: rgba(220, 255, 145, .7);
+        }
+        .menu-tarot-cards {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+        }
+        .menu-tarot-card {
+            width: 8rem;
+            height: 11.5rem;
+            border-radius: .85rem;
+            border: 1px solid rgba(184, 255, 79, .32);
+            background: linear-gradient(180deg, rgba(184, 255, 79, .74), rgba(125, 255, 0, .6));
+            color: #fff;
+            cursor: pointer;
+            transition: .25s;
+        }
+        .menu-tarot-card span {
+            display: block;
+            margin-bottom: 3rem;
+            font-size: 1.8rem;
+        }
+        .menu-tarot-card em {
+            font-family: "Jost", sans-serif;
+            font-size: .52rem;
+            letter-spacing: .22em;
+            font-style: normal;
+        }
+        .menu-tarot-card.picked {
+            transform: translateY(-6px) scale(1.03);
+        }
+        .menu-tarot-card.dimmed {
+            opacity: .25;
+            pointer-events: none;
+        }
+        .menu-tarot-result {
+            min-height: 4rem;
+            margin-top: 1rem;
+            opacity: 0;
+            transform: translateY(8px);
+            color: rgba(220, 255, 145, .82);
+            line-height: 1.65;
+            transition: .3s;
+        }
+        .menu-tarot-result.show {
+            opacity: 1;
+            transform: none;
+        }
+        .menu-tarot-result strong {
+            display: block;
+            color: #fff;
+            font-size: 1.12rem;
+        }
+        .spline-stage {
+            position: absolute;
+            inset: 0;
+            z-index: 20;
+            overflow: hidden;
+            background: radial-gradient(circle at 50% 45%, rgba(184, 255, 79, .2), transparent 30%), linear-gradient(180deg, #fbfff2, #f2ffde 54%, #fff);
+        }
+        .center-light-spline {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            z-index: 8;
+            width: min(46vw, 38rem);
+            height: min(62vh, 39rem);
+            transform: translate(-50%, -50%);
+            pointer-events: auto;
+            filter: drop-shadow(0 25px 55px rgba(80, 180, 0, .2));
+            transition: .45s;
+        }
+        .center-light-spline spline-viewer {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            background: transparent;
+        }
+        .peridot-product-layout {
+            position: absolute;
+            inset: 0;
+            z-index: 12;
+            font-family: "Jost", sans-serif;
+            color: var(--text);
+            pointer-events: none;
+        }
+        .peridot-product-layout::before {
+            content: "";
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            width: min(72vw, 58rem);
+            height: min(66vh, 39rem);
+            transform: translate(-50%, -50%);
+            border-radius: 2rem;
+            background: transparent;
+            border: 1px solid rgba(20, 85, 50, .12);
+            box-shadow: 0 22px 65px rgba(60, 100, 20, .06);
+        }
+        .product-title-block {
+            position: absolute;
+            left: 8%;
+            top: 11%;
+            z-index: 7;
+        }
+        .product-title-block h2 {
+            margin: .55rem 0 0;
+            font-size: clamp(2.5rem, 4.5vw, 5.2rem);
+            line-height: .88;
+            letter-spacing: .07em;
+            font-weight: 300;
+            color: var(--deep);
+        }
+        .product-mini-label {
+            position: absolute;
+            right: 8%;
+            top: 12%;
+            text-align: right;
+            line-height: 1.7;
+        }
+        .product-spec-card {
+            position: absolute;
+            left: 8%;
+            bottom: 11%;
+            z-index: 7;
+            width: min(22vw, 17rem);
+            padding: .85rem 1rem;
+            border-radius: .9rem;
+            background: rgba(255, 255, 255, .5);
+            border: 1px solid var(--line);
+        }
+        .product-spec-row {
+            display: flex;
+            justify-content: space-between;
+            gap: .8rem;
+            padding: .42rem 0;
+            border-bottom: 1px solid rgba(20, 85, 50, .1);
+            font-size: .68rem;
+            letter-spacing: .1em;
+        }
+        .product-spec-row:last-child {
+            border: 0;
+        }
+        .product-guide-line,
+        .product-guide-split {
+            position: absolute;
+            z-index: 48;
+            width: 1px;
+            pointer-events: none;
+            transform-origin: top center;
+            background: linear-gradient(transparent, rgba(20, 85, 50, .42), rgba(125, 255, 0, .18));
+        }
+        .product-guide-line {
+            left: calc(50% + 3.4rem);
+            top: 24%;
+            height: 24%;
+            transform: rotate(26deg);
+            transition: opacity .24s ease, transform .5s cubic-bezier(.16, 1.2, .32, 1), left .45s ease;
+        }
+        .product-guide-line::before {
+            content: "CLICK ME";
+            position: absolute;
+            left: 50%;
+            top: -1.75rem;
+            transform: translateX(-50%);
+            font-family: "Jost", sans-serif;
+            font-size: .43rem;
+            letter-spacing: .2em;
+            color: rgba(26, 90, 48, .58);
+            white-space: nowrap;
+        }
+        .product-guide-line::after,
+        .product-guide-split::before {
+            content: "";
+            position: absolute;
+            left: 50%;
+            border-radius: 50%;
+            transform: translateX(-50%);
+            background: var(--lime2);
+        }
+        .product-guide-line::after {
+            top: -.45rem;
+            width: .82rem;
+            height: .82rem;
+            box-shadow: 0 0 18px rgba(125, 255, 0, .68), 0 0 32px rgba(184, 255, 79, .32);
+            animation: guideDotGlow 2.2s ease-in-out infinite;
+        }
+        .product-guide-split {
+            left: calc(50% + 3.4rem);
+            top: 26%;
+            height: 21%;
+            opacity: 0;
+            filter: blur(.6px);
+            transform: translateX(-50%) rotate(0deg) scaleY(.12) translateY(.6rem);
+            transition: opacity .18s ease, left .72s cubic-bezier(.15, 1.55, .32, 1), transform .72s cubic-bezier(.15, 1.55, .32, 1), filter .32s ease;
+        }
+        .product-guide-split::before {
+            top: -.25rem;
+            width: .46rem;
+            height: .46rem;
+            box-shadow: 0 0 11px rgba(125, 255, 0, .55);
+            animation: guideDotGlow 2.2s ease-in-out infinite;
+        }
+        .spline-stage.scenes-open .product-guide-line {
+            opacity: 0;
+            transform: rotate(26deg) scaleY(.75);
+        }
+        .spline-stage.scenes-open .product-guide-line::before {
+            opacity: 0;
+        }
+        .spline-stage.scenes-open .product-guide-split {
+            opacity: 1;
+            filter: blur(0);
+        }
+        .spline-stage.scenes-open .product-guide-left {
+            left: calc(50% - min(9.8vw, 12rem) + 1.7rem);
+            transform: translateX(-50%) rotate(-28deg) scaleY(1);
+        }
+        .spline-stage.scenes-open .product-guide-right {
+            left: calc(50% + min(9.8vw, 12rem) + 1.7rem);
+            transform: translateX(-50%) rotate(28deg) scaleY(1);
+        }
+        @keyframes guideDotGlow {
+            0%,
+            100% {
+                opacity: .74;
+                transform: translateX(-50%) translateY(0);
+            }
+            50% {
+                opacity: 1;
+                transform: translateX(-50%) translateY(-.12rem);
+            }
+        }
+        .product-shot {
+            position: absolute;
+            top: 19%;
+            z-index: 35;
+            width: min(17vw, 16rem);
+            aspect-ratio: 16/9;
+            margin: 0;
+            border-radius: 1rem;
+            overflow: hidden;
+            background: #fff;
+            border: 1px solid var(--line);
+            box-shadow: 0 20px 45px rgba(52, 100, 18, .15);
+            opacity: 0;
+            pointer-events: none;
+            transition: .45s;
+            cursor: zoom-in;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .product-shot img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+        .product-shot-1 {
+            left: calc(50% - min(20vw, 19rem));
+            transform: translate(-50%, 18px) scale(.94) rotate(-2deg);
+        }
+        .product-shot-2 {
+            left: calc(50% + min(20vw, 19rem));
+            transform: translate(-50%, 18px) scale(.94) rotate(2deg);
+        }
+        .spline-stage.scenes-open .product-shot {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .spline-stage.scenes-open .product-shot-1 {
+            transform: translate(-50%, 0) scale(1) rotate(-2deg);
+        }
+        .spline-stage.scenes-open .product-shot-2 {
+            transform: translate(-50%, 0) scale(1) rotate(2deg);
+        }
+        .product-shot-label {
+            position: absolute;
+            left: .7rem;
+            bottom: .55rem;
+            padding: .2rem .5rem;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, .75);
+            font-size: .48rem;
+            letter-spacing: .18em;
+            color: rgba(9, 54, 36, .75);
+        }
+        .product-click-hint,
+        .desktop-3d-hint,
+        .back-btn {
+            position: absolute;
+            z-index: 10;
+            transform: translateX(-50%);
+            border-radius: 999px;
+            border: 1px solid var(--line);
+            background: rgba(255, 255, 255, .58);
+            font-family: "Jost", sans-serif;
+            color: rgba(25, 85, 48, .68);
+        }
+        .product-click-hint {
+            left: 50%;
+            bottom: 11%;
+            padding: .48rem 1rem;
+            font-size: .58rem;
+            letter-spacing: .2em;
+            transition: .25s;
+        }
+        .spline-stage.product-info-open .product-click-hint {
+            opacity: 0;
+            pointer-events: none;
+        }
+        .desktop-3d-hint {
+            left: 50%;
+            bottom: 4.8%;
+            padding: .55rem 1.05rem;
+            box-shadow: 0 14px 34px rgba(60, 100, 20, .08);
+            font-size: .58rem;
+            letter-spacing: .18em;
+            white-space: nowrap;
+            pointer-events: none;
+        }
+        .desktop-3d-hint strong {
+            color: rgba(9, 54, 36, .82);
+            font-weight: 500;
+        }
+        .product-description-card {
+            position: absolute;
+            right: 8%;
+            bottom: 10%;
+            z-index: 11;
+            width: min(29vw, 24rem);
+            padding: 1rem 1.1rem;
+            border-radius: 1rem;
+            background: rgba(255, 255, 255, .74);
+            border: 1px solid var(--line);
+            box-shadow: 0 16px 40px rgba(60, 100, 20, .11);
+            opacity: 0;
+            transform: translateY(14px);
+            pointer-events: none;
+            transition: .35s;
+        }
+        .spline-stage.product-info-open .product-description-card {
+            opacity: 1;
+            transform: none;
+            pointer-events: auto;
+        }
+        .product-desc-title {
+            margin: .38rem 0 .62rem;
+            font-size: 1.45rem;
+            letter-spacing: .06em;
+            color: rgba(9, 54, 36, .95);
+            font-weight: 500;
+        }
+        .product-desc-text {
+            margin: 0;
+            max-height: 8.7rem;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            overscroll-behavior: contain;
+            touch-action: pan-y;
+            padding-right: .3rem;
+            white-space: pre-line;
+            font-size: .95rem;
+            line-height: 1.65;
+            color: rgba(9, 54, 36, .76);
+        }
+        .back-btn {
+            left: 50%;
+            top: max(1rem, env(safe-area-inset-top));
+            z-index: 85;
+            padding: .58rem 1.2rem;
+            background: var(--soft-white);
+            font-size: .66rem;
+            letter-spacing: .18em;
+            color: rgba(30, 92, 58, .72);
+            white-space: nowrap;
+            cursor: pointer;
+        }
+        .product-zoom-modal {
+            z-index: 99990;
+            display: grid;
+            place-items: center;
+            padding: 4vw;
+            background: rgba(245, 255, 228, .88);
+            overflow: auto;
+        }
+        .product-zoom-modal img {
+            max-width: 88vw;
+            max-height: 84dvh;
+            object-fit: contain;
+            border-radius: 1rem;
+            box-shadow: 0 25px 70px rgba(40, 90, 15, .24);
+            transform: scale(.95);
+            transition: .3s;
+        }
+        .product-zoom-modal.show img {
+            transform: scale(1);
+        }
+        .product-zoom-close {
+            position: fixed;
+            top: max(1rem, env(safe-area-inset-top));
+            right: 1rem;
+            z-index: 2;
+            width: 2.7rem;
+            height: 2.7rem;
+            font-size: 1.65rem;
+        }
+        @media (max-width: 900px) and (orientation: portrait) {
+            .viewport,
+            .game-container {
+                height: 100dvh;
+                min-height: 100dvh;
+            }
+            .top-nav,
+            .nav-menu {
+                backdrop-filter: none;
+                -webkit-backdrop-filter: none;
+            }
+            .tarot-panel {
+                width: 92vw;
+                padding: 1.5rem 1rem;
+            }
+            .menu-tarot-title {
+                font-size: 1.55rem;
+            }
+            .menu-tarot-cards {
+                gap: .45rem;
+            }
+            .menu-tarot-card {
+                width: 27vw;
+                max-width: 6.4rem;
+                height: 9rem;
+            }
+            .menu-tarot-card span {
+                margin-bottom: 2.1rem;
+                font-size: 1.45rem;
+            }
+            .peridot-product-layout::before {
+                width: 94vw;
+                height: 91dvh;
+                top: 50.5%;
+                border-radius: 1.55rem;
+            }
+            .product-title-block {
+                left: 7%;
+                top: 7.5%;
+            }
+            .product-title-block h2 {
+                font-size: clamp(2rem, 9vw, 3rem);
+                line-height: .84;
+            }
+            .product-kicker {
+                font-size: .48rem;
+            }
+            .product-mini-label {
+                right: 7%;
+                top: 8.2%;
+                font-size: .47rem;
+                line-height: 1.55;
+            }
+            .product-spec-card {
+                display: none;
+            }
+            .center-light-spline {
+                top: 47.5%;
+                width: 102vw;
+                height: 51dvh;
+            }
+            .spline-stage.product-info-open .center-light-spline {
+                top: 43.8%;
+                width: 92vw;
+                height: 42dvh;
+            }
+            .spline-stage.product-info-open.scenes-open .center-light-spline {
+                top: 53.6%;
+                width: 104vw;
+                height: 45dvh;
+            }
+            .product-shot {
+                top: 25.5%;
+                width: 38vw;
+                height: 12dvh;
+                max-width: none;
+                aspect-ratio: auto;
+                border-radius: .85rem;
+            }
+            .product-shot-1 {
+                left: 7%;
+                transform: translateY(10px) scale(.96) rotate(-2deg);
+            }
+            .product-shot-2 {
+                right: 7%;
+                left: auto;
+                transform: translateY(10px) scale(.96) rotate(2deg);
+            }
+            .spline-stage.scenes-open .product-shot-1 {
+                transform: translateY(0) scale(1) rotate(-2deg);
+            }
+            .spline-stage.scenes-open .product-shot-2 {
+                transform: translateY(0) scale(1) rotate(2deg);
+            }
+            .product-guide-line {
+                left: 60.5%;
+                top: 25.8%;
+                height: 17.5%;
+            }
+            .product-guide-line::before {
+                top: -1.48rem;
+                font-size: .4rem;
+                letter-spacing: .16em;
+            }
+            .product-guide-line::after {
+                width: .78rem;
+                height: .78rem;
+                top: -.42rem;
+            }
+            .product-guide-split {
+                left: 60.5%;
+                top: 36.5%;
+                height: 16.2%;
+            }
+            .spline-stage.scenes-open .product-guide-left {
+                left: 33.5%;
+                transform: translateX(-50%) rotate(-30deg) scaleY(1);
+            }
+            .spline-stage.scenes-open .product-guide-right {
+                left: 77.5%;
+                transform: translateX(-50%) rotate(30deg) scaleY(1);
+            }
+            .product-click-hint {
+                top: 76.5%;
+                bottom: auto;
+                font-size: .48rem;
+                padding: .4rem .8rem;
+            }
+            .desktop-3d-hint {
+                display: block;
+                left: 50%;
+                top: 68.5%;
+                bottom: auto;
+                z-index: 34;
+                max-width: 84vw;
+                padding: .46rem .78rem;
+                background: rgba(255, 255, 255, .76);
+                font-size: .45rem;
+                letter-spacing: .08em;
+                line-height: 1.45;
+                text-align: center;
+                white-space: normal;
+            }
+            .spline-stage.product-info-open .desktop-3d-hint {
+                top: 62.5%;
+            }
+            .spline-stage.product-info-open.scenes-open .desktop-3d-hint {
+                top: 69.2%;
+            }
+            .product-description-card {
+                left: 7%;
+                right: 7%;
+                bottom: 7.5%;
+                width: auto;
+                max-height: 25dvh;
+                padding: .75rem .85rem;
+                border-radius: .9rem;
+            }
+            .product-caption-kicker {
+                font-size: .46rem;
+            }
+            .product-desc-title {
+                margin: .25rem 0 .4rem;
+                font-size: 1.05rem;
+            }
+            .product-desc-text {
+                max-height: 15.5dvh;
+                font-size: .79rem;
+                line-height: 1.5;
+            }
+        }
+        @media (max-width: 390px) and (orientation: portrait),
+        (max-height: 700px) and (orientation: portrait) {
+            .product-title-block {
+                top: 8%;
+            }
+            .product-title-block h2 {
+                font-size: 1.9rem;
+            }
+            .center-light-spline {
+                top: 46.8%;
+                width: 100vw;
+                height: 47dvh;
+            }
+            .spline-stage.product-info-open .center-light-spline {
+                top: 42%;
+                width: 88vw;
+                height: 39dvh;
+            }
+            .spline-stage.product-info-open.scenes-open .center-light-spline {
+                top: 52.8%;
+                width: 98vw;
+                height: 41dvh;
+            }
+            .product-shot {
+                top: 25%;
+                width: 37vw;
+                height: 11dvh;
+            }
+            .product-guide-line {
+                left: 61%;
+                top: 25.5%;
+                height: 16.2%;
+            }
+            .product-guide-split {
+                left: 61%;
+                top: 35.6%;
+                height: 15.1%;
+            }
+            .spline-stage.scenes-open .product-guide-left {
+                left: 34%;
+            }
+            .spline-stage.scenes-open .product-guide-right {
+                left: 78%;
+            }
+            .product-click-hint {
+                top: 75.5%;
+            }
+            .desktop-3d-hint {
+                top: 66.5%;
+                max-width: 86vw;
+                padding: .4rem .62rem;
+                font-size: .39rem;
+                letter-spacing: .065em;
+                line-height: 1.38;
+            }
+            .spline-stage.product-info-open .desktop-3d-hint {
+                top: 59.5%;
+            }
+            .spline-stage.product-info-open.scenes-open .desktop-3d-hint {
+                top: 67.8%;
+            }
+            .product-description-card {
+                bottom: 7%;
+                max-height: 24dvh;
+            }
+            .product-desc-text {
+                max-height: 14.5dvh;
+                font-size: .74rem;
+            }
+        }
+        @media (orientation: landscape) and (min-width: 901px) {
+            .product-title-block {
+                left: 2.4%;
+                top: 11%;
+                width: 25vw;
+            }
+            .product-title-block h2 {
+                font-size: clamp(3rem, 4.05vw, 5rem);
+                letter-spacing: .06em;
+            }
+            .center-light-spline {
+                width: min(50vw, 42rem);
+                height: min(66vh, 42rem);
+            }
+            .spline-stage.product-info-open.scenes-open .center-light-spline {
+                top: 58.5%;
+                width: min(47vw, 40rem);
+                height: min(62vh, 39rem);
+            }
+            .product-shot {
+                top: 23%;
+                width: min(15.5vw, 17.5rem);
+            }
+            .product-shot-1 {
+                left: calc(50% - min(13.5vw, 16rem));
+            }
+            .product-shot-2 {
+                left: calc(50% + min(13.5vw, 16rem));
+            }
+        }
+        @media (orientation: landscape) and (max-height: 720px) {
+            .top-nav {
+                top: max(.6rem, env(safe-area-inset-top));
+                left: .65rem;
+            }
+            .tarot-panel {
+                max-height: 90vh;
+                overflow: auto;
+            }
+            .menu-tarot-card {
+                width: 6.2rem;
+                height: 8rem;
+            }
+            .menu-tarot-card span {
+                margin-bottom: 1.6rem;
+            }
+            .peridot-product-layout::before {
+                width: 95vw;
+                height: 85dvh;
+                top: 50.5%;
+                border-radius: 1.35rem;
+            }
+            .product-title-block {
+                left: .6%;
+                top: 17%;
+                width: 30vw;
+            }
+            .product-title-block h2 {
+                margin-top: .35rem;
+                font-size: clamp(2rem, 4.25vw, 3.45rem);
+                line-height: .83;
+                letter-spacing: .055em;
+            }
+            .product-kicker {
+                font-size: .5rem;
+                letter-spacing: .24em;
+            }
+            .product-mini-label {
+                top: 13%;
+                right: 4.5%;
+                font-size: .49rem;
+                line-height: 1.55;
+                letter-spacing: .24em;
+            }
+            .center-light-spline {
+                left: 66.5%;
+                top: 64%;
+                width: min(42vw, 31rem);
+                height: 76dvh;
+            }
+            .spline-stage.product-info-open.scenes-open .center-light-spline {
+                top: 67%;
+                width: min(40vw, 30rem);
+                height: 72dvh;
+            }
+            .product-guide-line {
+                left: 70.2%;
+                top: 16%;
+                height: 23%;
+            }
+            .product-guide-split {
+                left: 70.2%;
+                top: 39%;
+                height: 21%;
+            }
+            .spline-stage.scenes-open .product-guide-left {
+                left: calc(66.5% - 8.8vw);
+                transform: translateX(-50%) rotate(-25deg) scaleY(1);
+            }
+            .spline-stage.scenes-open .product-guide-right {
+                left: calc(66.5% + 12.4vw);
+                transform: translateX(-50%) rotate(25deg) scaleY(1);
+            }
+            .product-shot {
+                top: 22%;
+                width: 18vw;
+                height: 19dvh;
+                max-width: none;
+                aspect-ratio: auto;
+            }
+            .product-shot-1 {
+                left: calc(66.5% - 10.8vw);
+                transform: translate(-50%, 0) scale(.96) rotate(-2deg);
+            }
+            .product-shot-2 {
+                left: calc(66.5% + 10.8vw);
+                transform: translate(-50%, 0) scale(.96) rotate(2deg);
+            }
+            .product-description-card {
+                left: 5.5%;
+                right: auto;
+                bottom: 10%;
+                width: 32vw;
+                height: 39dvh;
+                max-height: none;
+                min-height: 0;
+                padding: .7rem .82rem;
+                display: flex;
+                flex-direction: column;
+                overflow: hidden;
+                border-radius: .95rem;
+            }
+            .product-desc-title {
+                font-size: clamp(.98rem, 1.6vw, 1.15rem);
+                line-height: 1.15;
+            }
+            .product-desc-text {
+                flex: 1 1 auto;
+                min-height: 0;
+                max-height: none;
+                overflow-y: auto;
+                overflow-x: hidden;
+                padding-right: .35rem;
+                font-size: clamp(.7rem, 1.18vw, .8rem);
+                line-height: 1.42;
+                word-break: keep-all;
+                overflow-wrap: anywhere;
+            }
+            .product-click-hint {
+                left: 66.5%;
+                bottom: 12%;
+            }
+            .desktop-3d-hint {
+                left: 66.5%;
+                bottom: 4.5%;
+                max-width: 34vw;
+                white-space: normal;
+                text-align: center;
+                line-height: 1.45;
+                font-size: .46rem;
+                letter-spacing: .12em;
+                padding: .42rem .7rem;
+            }
+            .product-spec-card {
+                display: none;
+            }
+            .back-btn {
+                top: max(.6rem, env(safe-area-inset-top));
+            }
+        }
+        @media (orientation: landscape) and (max-height: 520px) {
+            .product-title-block {
+                left: .5%;
+                top: 15%;
+            }
+            .product-title-block h2 {
+                font-size: clamp(1.75rem, 3.8vw, 2.8rem);
+            }
+            .center-light-spline {
+                left: 66%;
+                top: 65%;
+                width: 39vw;
+                height: 74dvh;
+            }
+            .spline-stage.product-info-open.scenes-open .center-light-spline {
+                top: 68%;
+                width: 38vw;
+                height: 70dvh;
+            }
+            .product-shot {
+                top: 21%;
+                width: 17.2vw;
+                height: 18dvh;
+            }
+            .product-shot-1 {
+                left: calc(66% - 10.3vw);
+            }
+            .product-shot-2 {
+                left: calc(66% + 10.3vw);
+            }
+            .product-guide-split {
+                top: 38%;
+                height: 20%;
+            }
+            .product-description-card {
+                bottom: 9%;
+                width: 31vw;
+                height: 37dvh;
+            }
+            .product-desc-title {
+                font-size: .92rem;
+            }
+            .product-desc-text {
+                font-size: .66rem;
+                line-height: 1.36;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="viewport">
+        <div class="game-container">
+            <div class="top-nav" id="topNav">
+                <button aria-label="메뉴 열기" class="menu-toggle-btn" id="menuToggleBtn">
+                    <span></span><span></span><span></span>
+                </button>
+                <div class="nav-menu">
+                    <div class="nav-link" onclick="goMenu()">MAIN MENU</div>
+                    <div class="nav-link" onclick="goCollectGem()">COLLECT YOUR GEM</div>
+                    <div class="nav-link" onclick="openTarotBox(event)">TODAY TAROT</div>
+                </div>
+            </div>
+            <script src="https://unpkg.com/@splinetool/viewer@1.12.97/build/spline-viewer.js" type="module"></script>
+            <div class="spline-stage" id="splineStage">
+                <div class="center-light-spline" id="centerLightSpline" aria-label="페리도트 3D 보석">
+                    <spline-viewer url="https://prod.spline.design/oFTbfHlLwFQHKMF0/scene.splinecode" loading="lazy"></spline-viewer>
+                </div>
+                <div class="peridot-product-layout">
+                    <div class="product-title-block">
+                        <div class="product-kicker">REALITY · BY DESIGN</div>
+                        <h2>PERIDOT<br>OBJECT</h2>
+                    </div>
+                    <div class="product-mini-label">AUGUST BIRTHSTONE<br>LIGHTWEIGHT 3D GEM</div>
+                    <div class="product-guide-line"></div>
+                    <div class="product-guide-split product-guide-left" aria-hidden="true"></div>
+                    <div class="product-guide-split product-guide-right" aria-hidden="true"></div>
+                    <figure class="product-shot product-shot-1">
+                        <img src="Peridot view image.jpg" alt="Peridot scene preview 01">
+                        <figcaption class="product-shot-label">SCENE 01</figcaption>
+                    </figure>
+                    <figure class="product-shot product-shot-2">
+                        <img src="peridot view image 2.jpg" alt="Peridot scene preview 02">
+                        <figcaption class="product-shot-label">SCENE 02</figcaption>
+                    </figure>
+                    <div class="product-spec-card">
+                        <div class="product-spec-row"><span>TONE</span><span>LIME GREEN</span></div>
+                        <div class="product-spec-row"><span>SYMBOL</span><span>GROWTH</span></div>
+                        <div class="product-spec-row"><span>MOOD</span><span>BRIGHT</span></div>
+                    </div>
+                    <div class="product-click-hint">TAP THE GEM TO OPEN SCENES</div>
+                    <div class="desktop-3d-hint"><strong>DESKTOP</strong> · 데스크탑에서는 3D 환경에서 보석을 직접 경험할 수 있습니다</div>
+                    <div class="product-description-card" id="productDescriptionCard">
+                        <div class="product-caption-kicker">OBJECT NOTE</div>
+                        <h3 class="product-desc-title">The Light Inside Peridot</h3>
+                        <p class="product-desc-text" id="productDescText"></p>
+                    </div>
+                </div>
+            </div>
+            <div class="product-zoom-modal" id="productZoomModal" aria-hidden="true">
+                <button class="round-close product-zoom-close" id="productZoomClose" type="button">×</button>
+                <img id="productZoomImg" alt="Peridot enlarged preview">
+            </div>
+            <div class="back-btn" id="backBtn">← Return to Overview</div>
+            <div class="modal" id="menuTarotModal">
+                <div class="backdrop" id="menuTarotBackdrop"></div>
+                <div class="tarot-panel">
+                    <button class="round-close menu-tarot-close" id="menuTarotClose" aria-label="닫기">×</button>
+                    <div class="menu-tarot-kicker">PERIDOT TAROT</div>
+                    <h2 class="menu-tarot-title">Choose Your Card</h2>
+                    <p class="menu-tarot-desc">오늘의 흐름을 알고 싶다면 카드 한 장을 골라보세요.</p>
+                    <div class="menu-tarot-cards" id="menuTarotCards">
+                        <button class="menu-tarot-card" data-index="0" type="button"><span>Ⅰ</span><em>PERIDOT</em></button>
+                        <button class="menu-tarot-card" data-index="1" type="button"><span>Ⅱ</span><em>PERIDOT</em></button>
+                        <button class="menu-tarot-card" data-index="2" type="button"><span>Ⅲ</span><em>PERIDOT</em></button>
+                    </div>
+                    <div class="menu-tarot-result" id="menuTarotResult"></div>
+                </div>
+            </div>
+            <div class="transition-overlay" id="transitionOverlay"></div>
+        </div>
+    </div>
+    <script>
+        const $ = s => document.querySelector(s);
+        const $$ = s => document.querySelectorAll(s);
+        const nav = $('#topNav');
+        const overlay = $('#transitionOverlay');
+        const stage = $('#splineStage');
+        const gem = $('#centerLightSpline');
+        const desc = $('#productDescText');
+        const zoom = $('#productZoomModal');
+        const zoomImg = $('#productZoomImg');
+        const copy = `페리도트는 밝은 연두빛 안에 성장과 회복의 이미지를 품고 있습니다.
+작은 보석 하나를 중심에 두고, 주변 정보가 천천히 열리도록 구성해
+무거운 Spline 대신 가볍고 선명한 감각만 남겼습니다.`;
+        const tarot = [
+            ['8월의 연두빛', '이번 달 당신의 흐름은 천천히 선명해집니다. 조급함보다 균형을 선택해 보세요.'],
+            ['숨은 행운', '예상하지 못한 곳에서 좋은 기회가 들어옵니다. 작은 제안을 가볍게 넘기지 마세요.'],
+            ['관계의 온기', '멀어진 인연보다 곁에 남아 있는 사람에게 답이 있습니다. 진심은 가까운 곳에 있어요.'],
+            ['붉은 의지', '지쳤다고 느껴도 당신 안의 열정은 아직 살아 있습니다. 이번 주 다시 불붙습니다.'],
+            ['금전의 흐름', '작은 지출을 정리하면 새로운 여유가 생깁니다. 아끼는 만큼 들어옵니다.'],
+            ['감정의 회복', '마음이 무거웠다면 곧 풀립니다. 늦게 오던 답장이 뜻밖의 위로가 됩니다.'],
+            ['페리도트의 축복', '8월생의 기운이 부드럽게 열립니다. 당신의 마음이 원하는 방향으로 흐름이 정돈됩니다.']
+        ];
+        let touchStart = null;
+        let lastTap = 0;
+        let lastZoom = 0;
+        let infoOpened = false;
+        function fade(url, time = 600) {
+            overlay.classList.add('show');
+            setTimeout(() => location.href = url, time);
+        }
+        function goMenu() {
+            fade('The gem I am.html', 700);
+        }
+        function goCollectGem() {
+            fade('gem collection.html', 700);
+        }
+        function resetTarot() {
+            const result = $('#menuTarotResult');
+            result.classList.remove('show');
+            result.innerHTML = '';
+            $$('.menu-tarot-card').forEach(card => {
+                card.disabled = false;
+                card.classList.remove('picked', 'dimmed');
+            });
+        }
+        function openTarotBox(event) {
+            event && event.stopPropagation();
+            nav.classList.remove('open');
+            $('#menuTarotModal').classList.add('show');
+            resetTarot();
+        }
+        function closeTarotBox() {
+            $('#menuTarotModal').classList.remove('show');
+        }
+        function openProductInfo() {
+            if (!infoOpened) {
+                infoOpened = true;
+                desc.textContent = copy;
+                stage.classList.add('product-info-open');
+            }
+            stage.classList.toggle('scenes-open');
+        }
+        function isInsideGem(x, y) {
+            const rect = gem.getBoundingClientRect();
+            const nx = (x - (rect.left + rect.width / 2)) / (rect.width * .38);
+            const ny = (y - (rect.top + rect.height / 2)) / (rect.height * .38);
+            return nx * nx + ny * ny <= 1;
+        }
+        function tapGem() {
+            const now = Date.now();
+            if (now - lastTap < 350) return;
+            lastTap = now;
+            openProductInfo();
+        }
+        function openZoom(src) {
+            const now = Date.now();
+            if (now - lastZoom < 280) return;
+            lastZoom = now;
+            zoomImg.src = src;
+            zoom.classList.add('show');
+            zoom.setAttribute('aria-hidden', 'false');
+        }
+        function closeZoom() {
+            zoom.classList.remove('show');
+            zoom.setAttribute('aria-hidden', 'true');
+        }
+        $('#menuToggleBtn').onclick = event => {
+            event.stopPropagation();
+            nav.classList.toggle('open');
+        };
+        window.addEventListener('click', event => {
+            if (!nav.contains(event.target)) nav.classList.remove('open');
+        });
+        $('#menuTarotBackdrop').onclick = closeTarotBox;
+        $('#menuTarotClose').onclick = closeTarotBox;
+        $('#menuTarotCards').onclick = event => {
+            const card = event.target.closest('.menu-tarot-card');
+            if (!card) return;
+            const message = [...tarot].sort(() => Math.random() - .5)[+card.dataset.index] || tarot[0];
+            const result = $('#menuTarotResult');
+            $$('.menu-tarot-card').forEach(item => {
+                item.disabled = true;
+                item === card ? item.classList.add('picked') : item.classList.add('dimmed');
+            });
+            result.innerHTML = `<strong>${message[0]}</strong>${message[1]}`;
+            setTimeout(() => result.classList.add('show'), 220);
+        };
+        gem.addEventListener('pointerdown', event => {
+            if (event.isPrimary === false) return;
+            touchStart = {
+                id: event.pointerId,
+                x: event.clientX,
+                y: event.clientY,
+                t: performance.now()
+            };
+        }, true);
+        gem.addEventListener('pointerup', event => {
+            if (!touchStart || touchStart.id !== event.pointerId) return;
+            const distance = Math.hypot(event.clientX - touchStart.x, event.clientY - touchStart.y);
+            const time = performance.now() - touchStart.t;
+            touchStart = null;
+            if (distance <= 18 && time <= 700 && isInsideGem(event.clientX, event.clientY)) tapGem();
+        }, true);
+        gem.addEventListener('pointercancel', () => touchStart = null, true);
+        gem.onclick = event => {
+            event.stopPropagation();
+            if (isInsideGem(event.clientX, event.clientY)) tapGem();
+        };
+        $$('.product-shot').forEach(shot => {
+            let zoomStart = null;
+            const img = shot.querySelector('img');
+            shot.addEventListener('pointerdown', event => {
+                event.stopPropagation();
+                zoomStart = {
+                    id: event.pointerId,
+                    x: event.clientX,
+                    y: event.clientY,
+                    t: performance.now()
+                };
+            }, true);
+            shot.addEventListener('pointerup', event => {
+                event.preventDefault();
+                event.stopPropagation();
+                if (!zoomStart || zoomStart.id !== event.pointerId) return;
+                const distance = Math.hypot(event.clientX - zoomStart.x, event.clientY - zoomStart.y);
+                const time = performance.now() - zoomStart.t;
+                zoomStart = null;
+                if (distance <= 24 && time <= 800) openZoom(img.currentSrc || img.src);
+            }, true);
+            shot.addEventListener('click', event => {
+                event.preventDefault();
+                event.stopPropagation();
+                openZoom(img.currentSrc || img.src);
+            }, true);
+        });
+        $('#productZoomClose').onclick = closeZoom;
+        zoom.onclick = event => {
+            if (event.target === zoom) closeZoom();
+        };
+        ['pointerdown', 'pointerup', 'click'].forEach(type => {
+            $('#productDescriptionCard').addEventListener(type, event => event.stopPropagation());
+        });
+        $('#backBtn').onclick = () => fade('Peridot_mobile_info_split.html', 500);
+        window.addEventListener('keydown', event => {
+            if (event.key === 'Escape') {
+                closeZoom();
+                closeTarotBox();
+                nav.classList.remove('open');
+            }
+        });
+    </script>
+</body>
+</html>
